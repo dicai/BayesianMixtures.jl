@@ -1,6 +1,6 @@
 # Univariate Normal setup, following Richardson & Green (1997).
 # This version uses sampler code that is optimized for univariate normal.
-module Normal
+module Normal-mod
 
 module NormalModel # submodule for component family definitions
 export Theta, Data, likelihood, log_likelihood, prior_sample, prior_sample!, log_prior,
@@ -37,9 +37,10 @@ end
 
 function construct_hyperparameters(options)
     x = options.x
+    x_full = options.x_full
     # Use values in Green & Richardson (1997) to enable comparison.
-    m = (minimum(x) + maximum(x))/2
-    R = maximum(x) - minimum(x)
+    m = (minimum(x_full) + maximum(x_full))/2
+    R = maximum(x_full) - minimum(x_full)
     s = R
     a = 2.0
     b = 1.0  # b will be updated in Gibbs sampling
@@ -68,7 +69,7 @@ function update_parameter!(theta_a,theta_b,x,z,c,H,active)
     L = lambda*n + ell
     M = (lambda*sum_xc + ell*H.m) / L
     if active; theta_b[1] = randn()/sqrt(L) + M; end
-    
+
     # update standard deviation
     alpha = H.a + 0.5*n
     r = 0.0
