@@ -3,7 +3,6 @@ type Options
     mode::String
     model_type::String
     x::Array{Data,1}
-    x_full::Array{Data,1}
     n_total::Int64
     n_keep::Int64
     n_burn::Int64
@@ -28,6 +27,7 @@ type Options
     log_v::Array{Float64,1}
     # Other
     n::Int64
+    #x_full::Array{Data,1}
 end
 
 type Result
