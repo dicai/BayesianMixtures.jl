@@ -1,6 +1,6 @@
 # Univariate Normal setup, following Richardson & Green (1997).
 # This version uses sampler code that is optimized for univariate normal.
-module Normal
+module NormalMod
 
 module NormalModel # submodule for component family definitions
 export Theta, Data, likelihood, log_likelihood, prior_sample, prior_sample!, log_prior,
@@ -39,7 +39,6 @@ function construct_hyperparameters(options)
     x = options.x
     x_full = options.x_full
     # Use values in Green & Richardson (1997) to enable comparison.
-    println("Using full data set for hyperparameters")
     m = (minimum(x_full) + maximum(x_full))/2
     R = maximum(x_full) - minimum(x_full)
     s = R

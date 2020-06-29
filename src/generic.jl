@@ -3,12 +3,13 @@ type Options
     mode::String
     model_type::String
     x::Array{Data,1}
+    x_full::Array{Data,1}
     n_total::Int64
     n_keep::Int64
     n_burn::Int64
     verbose::Bool
     use_hyperprior::Bool
-    t_max::Int64 
+    t_max::Int64
     # MFM options
     gamma::Float64
     log_pk::String

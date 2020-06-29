@@ -5,6 +5,9 @@ include("MFM.jl")
 include("Random.jl")
 
 include("Normal.jl")
+# add NormalMod
+include("NormalMod.jl")
+
 include("MVN.jl")
 include("MVNaaC.jl")
 include("MVNaaN.jl")
@@ -19,7 +22,7 @@ include("NormalNonoptimized.jl")
 
 # Create an options object to specify model, data, and MCMC parameters.
 function options(
-        mode, # "Normal", "MVN", "MVNaaC", "MVNaaN", or "MVNaaRJ" 
+        mode, # "Normal", "NormalMod", "MVN", "MVNaaC", "MVNaaN", or "MVNaaRJ"
         model_type, # "MFM" or "DPM"
         x, # data
         n_total; # total number of MCMC sweeps to run the sampler
@@ -41,10 +44,13 @@ function options(
         # Jain-Neal split-merge options:
         use_splitmerge=true, # use split-merge or not
         n_split=5, # number of intermediate sweeps for split launch state
-        n_merge=5,  #                 "         "       merge    "     "  
-        
+        n_merge=5,  #                 "         "       merge    "     "
+
         # RJMCMC options:
-        k_max=t_max # a guess at an upper bound on # of components that will be encountered during MCMC
+        k_max=t_max, # a guess at an upper bound on # of components that will be encountered during MCMC
+
+        # FULL DATA SET (x is a subset of x_full)
+        x_full=x
     )
 
     # Compute partition distribution values
@@ -64,7 +70,7 @@ function options(
 
     n_keep = min(n_keep,n_total)
     module_ = getfield(BayesianMixtures,Symbol(mode))
-    return module_.Options(mode, model_type, x, n_total, n_keep, n_burn, verbose,
+    return module_.Options(mode, model_type, x, x_full, n_total, n_keep, n_burn, verbose,
                            use_hyperprior, t_max, gamma, log_pk, alpha_random, alpha,
                            use_splitmerge, n_split, n_merge, k_max, a, b, log_v, n)
 end
@@ -84,7 +90,7 @@ function run_sampler(options)
         println("n = $n, n_total = $n_total, n_keep = $n_keep")
         print("Running... ")
     end
-    
+
     # Main run
     tic()
     t_r,N_r,z_r,theta_r,keepers = module_.sampler(o,n_total,n_keep)
@@ -101,7 +107,7 @@ function run_sampler(options)
     # @profile sampler(x,n_total,n_keep,o)
     # Profile.print(format = :flat)
     # Profile.clear()
-    
+
     return module_.Result(o,t_r,N_r,z_r,theta_r,keepers,elapsed_time,time_per_step)
 end
 
@@ -305,7 +311,7 @@ end
 # ==================== Functions to plot results ====================
 # ===================================================================
 # ===================================================================
-    
+
 can_plot = (Pkg.installed("PyPlot")!=nothing)
 if can_plot; using PyPlot; end
 checkplotting() = (if !can_plot; error("Plotting is disabled since PyPlot is not installed."); end)
@@ -504,7 +510,7 @@ function rug_plot(data) # Rug plot of data
     tick_params(axis="x",direction="out",top="off")
     title("Rug plot")
     draw_now()
-end 
+end
 
 function plot_histogram(data; kwargs...) # Histogram of data
     checkplotting()
