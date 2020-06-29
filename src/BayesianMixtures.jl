@@ -22,7 +22,7 @@ include("NormalNonoptimized.jl")
 
 # Create an options object to specify model, data, and MCMC parameters.
 function options(
-        mode, # "Normal", "MVN", "MVNaaC", "MVNaaN", or "MVNaaRJ"
+        mode, # "Normal", "Normal-mod", "MVN", "MVNaaC", "MVNaaN", or "MVNaaRJ"
         model_type, # "MFM" or "DPM"
         x, # data
         n_total; # total number of MCMC sweeps to run the sampler
