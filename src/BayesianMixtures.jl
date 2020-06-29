@@ -70,7 +70,7 @@ function options(
 
     n_keep = min(n_keep,n_total)
     module_ = getfield(BayesianMixtures,Symbol(mode))
-    return module_.Options(mode, model_type, x, n_total, n_keep, n_burn, verbose,
+    return module_.Options(mode, model_type, x, x_full, n_total, n_keep, n_burn, verbose,
                            use_hyperprior, t_max, gamma, log_pk, alpha_random, alpha,
                            use_splitmerge, n_split, n_merge, k_max, a, b, log_v, n)
 end
