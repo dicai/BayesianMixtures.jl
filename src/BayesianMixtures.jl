@@ -6,7 +6,7 @@ include("Random.jl")
 
 include("Normal.jl")
 # add normal-mod
-include("Normal-mod.jl")
+include("NormalMod.jl")
 
 include("MVN.jl")
 include("MVNaaC.jl")
@@ -22,7 +22,7 @@ include("NormalNonoptimized.jl")
 
 # Create an options object to specify model, data, and MCMC parameters.
 function options(
-        mode, # "Normal", "Normal-mod", "MVN", "MVNaaC", "MVNaaN", or "MVNaaRJ"
+        mode, # "Normal", "NormalMod", "MVN", "MVNaaC", "MVNaaN", or "MVNaaRJ"
         model_type, # "MFM" or "DPM"
         x, # data
         n_total; # total number of MCMC sweeps to run the sampler
