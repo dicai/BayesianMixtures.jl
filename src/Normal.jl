@@ -1,6 +1,6 @@
 # Univariate Normal setup, following Richardson & Green (1997).
 # This version uses sampler code that is optimized for univariate normal.
-module Normal-mod
+module Normal
 
 module NormalModel # submodule for component family definitions
 export Theta, Data, likelihood, log_likelihood, prior_sample, prior_sample!, log_prior,
