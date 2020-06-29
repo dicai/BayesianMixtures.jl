@@ -5,7 +5,7 @@ include("MFM.jl")
 include("Random.jl")
 
 include("Normal.jl")
-# add normal-mod
+# add NormalMod
 include("NormalMod.jl")
 
 include("MVN.jl")
