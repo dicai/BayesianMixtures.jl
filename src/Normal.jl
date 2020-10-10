@@ -52,7 +52,9 @@ function construct_hyperparameters(options)
     h = 10/R^2
 
     # specify the weight
-    alpha_wt = eval(parse(options.alpha_wt_str))(options.n)
+    alpha_eval = eval(parse(options.alpha_wt_str))
+    alpha_wt_fn(n) = Base.invokelatest(alpha_eval, n)
+    alpha_wt = alpha_wt_fn(options.n)
 
     return Hyperparameters(m,s,a,b,g,h, alpha_wt)
 end
