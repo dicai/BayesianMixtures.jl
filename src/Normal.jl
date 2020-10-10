@@ -34,6 +34,7 @@ type Hyperparameters
     b::Float64  # prior rate of sigma (starting value)
     g::Float64  # (hyper)prior shape of b
     h::Float64  # (hyper)prior rate of b
+    alpha_wt::Float64 # alpha weight (not technically a hyperparameter)
 end
 
 ## TODO: STORE THE ALPHA WEIGHT HERE? SAMPLE SIZE?
