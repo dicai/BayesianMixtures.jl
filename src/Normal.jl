@@ -77,15 +77,15 @@ function update_parameter!(theta_a,theta_b,x,z,c,H,active)
     # update mean
     ell = 1/H.s^2
     lambda = 1/(theta_a[2]^2)
-    L = lambda*n + ell ###
-    M = (lambda*sum_xc + ell*H.m) / L ###
+    L = lambda*n * H.alpha_wt + ell ###
+    M = (lambda*sum_xc * H.alpha_wt + ell*H.m) / L ###
     if active; theta_b[1] = randn()/sqrt(L) + M; end
 
     # update standard deviation
-    alpha = H.a + 0.5*n ###
+    alpha = H.a + 0.5*n * H.alpha_wt ###
     r = 0.0
     for i = 1:length(z); if z[i]==c; r += (x[i]-theta_b[1])*(x[i]-theta_b[1]); end; end
-    beta = H.b + 0.5*r ###
+    beta = H.b + 0.5*r * H.alpha_wt ###
     # if active; theta_b[2] = 1/sqrt(rand(Gamma(alpha,1/beta))); end
     if active; theta_b[2] = sqrt(Random.inverse_gamma(alpha,beta)); end
 
