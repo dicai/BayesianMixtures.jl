@@ -1,5 +1,6 @@
 # Univariate Normal setup, following Richardson & Green (1997).
 # This version uses sampler code that is optimized for univariate normal.
+# Note: this has been modified to allow for a fixed prior
 module Normal
 
 module NormalModel # submodule for component family definitions
@@ -35,8 +36,10 @@ type Hyperparameters
     h::Float64  # (hyper)prior rate of b
 end
 
+## TODO: STORE THE ALPHA WEIGHT HERE? SAMPLE SIZE?
 function construct_hyperparameters(options)
     x = options.x
+    # this is the full data set
     x_full = options.x_full
     # Use values in Green & Richardson (1997) to enable comparison.
     println("Using full data set for hyperparameters")
@@ -47,7 +50,11 @@ function construct_hyperparameters(options)
     b = 1.0  # b will be updated in Gibbs sampling
     g = 0.2
     h = 10/R^2
-    return Hyperparameters(m,s,a,b,g,h)
+
+    # specify the weight
+    alpha_wt = eval(parse(options.alpha_wt_str))(options.n)
+
+    return Hyperparameters(m,s,a,b,g,h, alpha_wt)
 end
 
 # Prior (Base distribution)
@@ -67,15 +74,15 @@ function update_parameter!(theta_a,theta_b,x,z,c,H,active)
     # update mean
     ell = 1/H.s^2
     lambda = 1/(theta_a[2]^2)
-    L = lambda*n + ell
-    M = (lambda*sum_xc + ell*H.m) / L
+    L = lambda*n + ell ###
+    M = (lambda*sum_xc + ell*H.m) / L ###
     if active; theta_b[1] = randn()/sqrt(L) + M; end
 
     # update standard deviation
-    alpha = H.a + 0.5*n
+    alpha = H.a + 0.5*n ###
     r = 0.0
     for i = 1:length(z); if z[i]==c; r += (x[i]-theta_b[1])*(x[i]-theta_b[1]); end; end
-    beta = H.b + 0.5*r
+    beta = H.b + 0.5*r ###
     # if active; theta_b[2] = 1/sqrt(rand(Gamma(alpha,1/beta))); end
     if active; theta_b[2] = sqrt(Random.inverse_gamma(alpha,beta)); end
 

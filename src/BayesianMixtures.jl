@@ -50,7 +50,10 @@ function options(
         k_max=t_max, # a guess at an upper bound on # of components that will be encountered during MCMC
 
         # FULL DATA SET (x is a subset of x_full)
-        x_full=x
+        x_full=x,
+
+        # string representation of alpha function, default is 1
+        alpha_wt_str = "n -> 1"
     )
 
     # Compute partition distribution values

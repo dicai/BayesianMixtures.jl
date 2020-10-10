@@ -1,4 +1,3 @@
-
 type Options
     mode::String
     model_type::String
@@ -28,6 +27,8 @@ type Options
     log_v::Array{Float64,1}
     # Other
     n::Int64
+    # alpha_N weight string
+    alpha_wt_str::String
 end
 
 type Result
