@@ -43,7 +43,7 @@ function log_marginal(p,H)
     # log term w/ update to c
     cc = 0.5 * log(H.c + n) ##
 
-    term = H.d * (H.constant - 0.5*n*log(2*pi) - cc + H.log_Ga[n]) - aa * LB
+    term = H.d * (H.constant - 0.5*n*log(2*pi) - cc + H.log_Ga[p.n]) - aa * LB
     #return H.d * (H.constant - 0.5*n*log(2*pi) - 0.5*log(H.c+n) + H.log_Ga[n]) - (H.a+0.5*n) * LB
     return term
 end
