@@ -24,26 +24,25 @@ Theta_remove!(p,x) = (for i=1:length(x); p.sum_x[i] -= x[i]; p.sum_xx[i] -= x[i]
 # In each dimension independently,
 # X_1,...,X_n ~ Normal(mu,1/lambda) with Normal(mu|m,1/(c*lambda))Gamma(lambda|a,b) prior on mean=mu, precision=lambda.
 function log_marginal(p,H)
-    n = p.n * H.alpha_wt
+    n = p.n
     LB = 0.0
     # For each dimension
     for i = 1:H.d
         ## update to b
         t1 = H.b + 0.5 * p.sum_xx[i] * H.alpha_wt ###
         t2 = 0.5 * p.sum_x[i]*p.sum_x[i] / n * H.alpha_wt
-        t3 = 0.5 * H.c * n * (p.sum_x[i]/n - H.m)^2 / (H.c + n) * H.alpha_wt
-
+        t3 = 0.5 * H.c * n * H.alpha_wt * (p.sum_x[i]/n - H.m)^2 / (H.c + n * H.alpha_wt)
         #LB += log(H.b + 0.5 * p.sum_xx[i] - 0.5 * p.sum_x[i]*p.sum_x[i] / n + \
         #          0.5 * H.c * n * (p.sum_x[i]/n - H.m)^2/(H.c + n))
         LB += log(t1 - t2 + t3)
     end
 
     # update to a
-    aa = H.a + 0.5 * n ##
+    aa = H.a + 0.5 * n * H.alpha_wt ##
     # log term w/ update to c
-    cc = 0.5 * log(H.c + n) ##
+    cc = 0.5 * log(H.c + n * H.alpha_wt) ##
 
-    term = H.d * (H.constant - 0.5*n*log(2*pi) - cc + H.log_Ga[p.n]) - aa * LB
+    term = H.d * (H.constant - 0.5*n*log(2*pi)*H.alpha_wt - cc + H.log_Ga[p.n]) - aa * LB
     #return H.d * (H.constant - 0.5*n*log(2*pi) - 0.5*log(H.c+n) + H.log_Ga[n]) - (H.a+0.5*n) * LB
     return term
 end
