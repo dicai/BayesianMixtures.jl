@@ -1,5 +1,11 @@
 
 function randp(p,d)
+    """
+    Samples a new cluster according to p.
+
+    p: unnormalized probability vector
+    d: length of p
+    """
     s = 0.; for j = 1:d; s += p[j]; end
     u = rand()*s
     j = 1
@@ -29,6 +35,9 @@ function ordered_remove!(index,list,t)
 end
 
 function restricted_Gibbs!(zsa,zsb,ni,nj,xs,ns,is,js,tia,tib,tja,tjb,b,H,active)
+    """
+    Subroutine for the split merge procedure.
+    """
     log_p = 0.
     for k = 1:ns
         if k!=is && k!=js
@@ -46,7 +55,7 @@ function restricted_Gibbs!(zsa,zsb,ni,nj,xs,ns,is,js,tia,tib,tja,tjb,b,H,active)
             end
         end
     end
-    
+
     log_p += update_parameter!(tia,tib,xs,zsb,true,H,active)
     log_p += update_parameter!(tja,tjb,xs,zsb,false,H,active)
     return log_p,ni,nj
@@ -57,7 +66,7 @@ function split_merge(xs,zs0,is,js,ti,tj,tm,ti0,tj0,t,H,a,b,log_v,n_split,n_merge
     ns = length(xs)
     splitting = zs0[js]
     dummy = zeros(Int,ns)
-    
+
     # randomly choose the split launch state
     zs = (rand(ns).<0.5)  # start with a uniformly chosen split
     zs[is],zs[js] = true,false
@@ -67,21 +76,21 @@ function split_merge(xs,zs0,is,js,ti,tj,tm,ti0,tj0,t,H,a,b,log_v,n_split,n_merge
     for rep = 1:n_split  # make several moves
         log_p,ni,nj = restricted_Gibbs!(zs,zs,ni,nj,xs,ns,is,js,ti,ti,tj,tj,b,H,true)
     end
-    
+
     # randomly choose the merge launch state
     prior_sample!(tm,H)  # sample initial parameter from the prior
     for rep = 1:n_merge  # make several moves
         update_parameter!(tm,tm,xs,dummy,0,H,true)
     end
-    
+
     # make proposal
     if splitting  # propose a split
         # make one final sweep and compute it's probability density
         log_prop_ab,ni,nj = restricted_Gibbs!(zs,zs,ni,nj,xs,ns,is,js,ti,ti,tj,tj,b,H,true)
-        
+
         # compute probability density of going from merge launch state to original state
         log_prop_ba = update_parameter!(tm,ti0,xs,dummy,0,H,false)
-        
+
         # compute acceptance probability
         log_prior_b = log_v[t+1] + lgamma(ni+b)+lgamma(nj+b)-2*lgamma(a) + log_prior(ti,H) + log_prior(tj,H)
         log_prior_a = log_v[t] + lgamma(ns+b)-lgamma(a) + log_prior(ti0,H)
@@ -91,15 +100,15 @@ function split_merge(xs,zs0,is,js,ti,tj,tm,ti0,tj0,t,H,a,b,log_v,n_split,n_merge
         end
         p_accept = min(1, exp(log_prop_ba-log_prop_ab + log_prior_b-log_prior_a + log_lik_ratio))
         #println("split proposal: ",p_accept)
-        
+
         # accept or reject
         accept = (rand()<p_accept)
         return accept,zs,ni,nj
-        
+
     else  # propose a merge
         # make one final sweep and compute its probability density
         log_prop_ab = update_parameter!(tm,tm,xs,dummy,0,H,true)
-        
+
         # compute probability density of going from split launch state to original state
         log_prop_ba,ni,nj = restricted_Gibbs!(zs,zs0,ni,nj,xs,ns,is,js,ti,ti0,tj,tj0,b,H,false)
 
@@ -113,7 +122,7 @@ function split_merge(xs,zs0,is,js,ti,tj,tm,ti0,tj0,t,H,a,b,log_v,n_split,n_merge
         end
         p_accept = min(1, exp(log_prop_ba-log_prop_ab + log_prior_b-log_prior_a + log_lik_ratio))
         #println("merge proposal: ",p_accept)
-        
+
         # accept or reject
         accept = (rand()<p_accept)
         return accept,zs,ns,ns
@@ -122,6 +131,9 @@ end
 
 
 function sampler(options,n_total,n_keep)
+    """
+    Function to run Gibbs sampler.
+    """
     x,n = options.x,options.n
     t_max = options.t_max
     a,b,log_v = options.a,options.b,options.log_v
@@ -137,7 +149,8 @@ function sampler(options,n_total,n_keep)
     keepers[:] = round.(Int,linspace(round(Int,n_total/n_keep),n_total,n_keep))
     keep_index = 0
 
-    if model_type=="MFM"
+    # represents prob of new cluster
+    if model_type == "MFM"
         A = a*exp.(diff(log_v))
     else # DPM
         A = alpha*ones(n)
@@ -151,6 +164,10 @@ function sampler(options,n_total,n_keep)
     N = zeros(Int,t_max+3); N[1] = n  # N[c] = size of cluster c
 
     H = construct_hyperparameters(options)
+
+
+
+
     D = 2 # dimension of the parameter, theta = [mu,sigma]
     theta = zeros(D,t_max+3); theta[:,1] = prior_sample(H)  # theta[:,c] = parameters for cluster c
     theta_p = zeros(D)  # temporary variable to hold "proposed" theta
@@ -162,21 +179,22 @@ function sampler(options,n_total,n_keep)
     p = zeros(n+1)
     zs = ones(Int,n)  # temporary variable used for split-merge assignments
     S = zeros(Int,n)  # temporary variable used for split-merge indices
-    
+
     log_Nb = log.((1:n) + b)
-    
+
     # Record-keeping variables
     t_r = zeros(Int8,n_total); @assert(t_max < 2^7)
     N_r = zeros(Int16,t_max+3,n_total); @assert(n < 2^15)
     z_r = zeros(Int8,n,n_keep); @assert(t_max < 2^7)
     theta_r = Theta[zeros(2) for j=1:t_max+3, iteration=1:n_keep]
-    
+
     for iteration = 1:n_total
         #  -------------- Resample thetas and H --------------
         for j = 1:t
             c = list[j]
             theta_c[1] = theta[1,c]
             theta_c[2] = theta[2,c]
+            # updates theta_c values
             update_parameter!(theta_c,theta_c,x,z,c,H,true)
             theta[1,c] = theta_c[1]
             theta[2,c] = theta_c[2]
@@ -196,12 +214,12 @@ function sampler(options,n_total,n_keep)
             log_v = (1:t_max+1)*log(alpha) - lgamma(alpha+n) + lgamma(alpha)
             A = alpha*ones(n)
         end
-            
+
         # -------------- Resample z's --------------
         prior_sample!(theta_aux,n,H)
         for i = 1:n
             # remove point i from it's cluster
-            c = z[i]    
+            c = z[i]
             N[c] -= 1
             if N[c]>0
                 # theta_p = theta_aux[:,i]
@@ -215,25 +233,25 @@ function sampler(options,n_total,n_keep)
                 ordered_remove!(c,list,t)
                 t -= 1
             end
-            
-            # compute probabilities for resampling
+
+            # compute (unnormalized) probabilities for resampling
             for j = 1:t
-                p[j] = (N[list[j]]+b)*likelihood(x[i],theta,list[j])
+                p[j] = (N[list[j]]+b) * likelihood(x[i],theta,list[j]) #* H.alpha_wt
             end
-            p[t+1] = A[t]*likelihood(x[i],theta_p)
-            
+            p[t+1] = A[t] * likelihood(x[i],theta_p) #* H.alpha_wt
+
             # sample a new cluster for it
             j = randp(p,t+1)
-            
-            # add point i to it's new cluster
+
+            # add point i to its new cluster
             if j<=t
                 c = list[j]
             else
                 @assert(t<t_max, "Sampled t exceeded t_max. Increase t_max and retry.")
-                
+
                 # give it the smallest available cluster ID number, and keep list ordered
                 c = ordered_insert_next!(list,t)
-                
+
                 #theta[:,c] = theta_p
                 theta[1,c] = theta_p[1]
                 theta[2,c] = theta_p[2]
@@ -242,7 +260,7 @@ function sampler(options,n_total,n_keep)
             z[i] = c
             N[c] += 1
         end
-        
+
         # -------------- Split/merge move --------------
         if use_splitmerge
             # randomly choose a pair of indices
@@ -257,10 +275,10 @@ function sampler(options,n_total,n_keep)
                 if c_i==c_j
                     # split off a new cluster, c_j
                     @assert(t<t_max, "Sampled t exceeded t_max. Increase t_max and retry.")
-                    
+
                     # give the new cluster the smallest available ID number, and keep list ordered
                     c_j = ordered_insert_next!(list,t)
-                    
+
                     # z[S[zs]] = c_i is already true
                     z[S[.!zs]] = c_j
                     N[c_i] = ni
@@ -269,7 +287,7 @@ function sampler(options,n_total,n_keep)
                         theta[l,c_i] = ti[l]
                         theta[l,c_j] = tj[l]
                     end
-                    
+
                     t += 1
                 else
                     # merge cluster c_j into c_i
@@ -286,8 +304,8 @@ function sampler(options,n_total,n_keep)
                 end
             end
         end
-    
-    
+
+
         # -------------- Record results --------------
         t_r[iteration] = t
         for j = 1:t
@@ -303,7 +321,7 @@ function sampler(options,n_total,n_keep)
             end
         end
     end
-    
+
     return t_r,N_r,z_r,theta_r,keepers
 end
 

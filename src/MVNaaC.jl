@@ -13,18 +13,39 @@ type Theta
     sum_xx::Array{Float64,1} # sum of x.*x for the data points assigned to this cluster
     Theta(d) = (p=new(); p.n=0; p.sum_x=zeros(d); p.sum_xx=zeros(d); p)
 end
+
 new_theta(H) = Theta(H.d)
+
 Theta_clear!(p) = (p.sum_x[:] = 0.; p.sum_xx[:] = 0.; p.n = 0)
+
 Theta_adjoin!(p,x) = (for i=1:length(x); p.sum_x[i] += x[i]; p.sum_xx[i] += x[i]*x[i]; end; p.n += 1)
 Theta_remove!(p,x) = (for i=1:length(x); p.sum_x[i] -= x[i]; p.sum_xx[i] -= x[i]*x[i]; end; p.n -= 1)
 
 # In each dimension independently,
 # X_1,...,X_n ~ Normal(mu,1/lambda) with Normal(mu|m,1/(c*lambda))Gamma(lambda|a,b) prior on mean=mu, precision=lambda.
 function log_marginal(p,H)
-    n = p.n
+    n = p.n * H.alpha_wt
     LB = 0.0
-    for i=1:H.d; LB += log(H.b + 0.5*p.sum_xx[i] - 0.5*p.sum_x[i]*p.sum_x[i]/n + 0.5*H.c*n*(p.sum_x[i]/n - H.m)^2/(H.c+n)); end
-    return H.d*(H.constant - 0.5*n*log(2*pi) - 0.5*log(H.c+n) + H.log_Ga[n]) - (H.a+0.5*n)*LB
+    # For each dimension
+    for i = 1:H.d
+        ## update to b
+        t1 = H.b + 0.5 * p.sum_xx[i] * H.alpha_wt ###
+        t2 = 0.5 * p.sum_x[i]*p.sum_x[i] / n * H.alpha_wt
+        t3 = 0.5 * H.c * n * (p.sum_x[i]/n - H.m)^2 / (H.c + n) * H.alpha_wt
+
+        #LB += log(H.b + 0.5 * p.sum_xx[i] - 0.5 * p.sum_x[i]*p.sum_x[i] / n + \
+        #          0.5 * H.c * n * (p.sum_x[i]/n - H.m)^2/(H.c + n))
+        LB += log(t1 - t2 + t3)
+    end
+
+    # update to a
+    aa = H.a + 0.5 * n ##
+    # log term w/ update to c
+    cc = 0.5 * log(H.c + n) ##
+
+    term = H.d * (H.constant - 0.5*n*log(2*pi) - cc + H.log_Ga[n]) - aa * LB
+    #return H.d * (H.constant - 0.5*n*log(2*pi) - 0.5*log(H.c+n) + H.log_Ga[n]) - (H.a+0.5*n) * LB
+    return term
 end
 
 function log_marginal(x,p,H)
@@ -42,6 +63,7 @@ type Hyperparameters
     b::Float64  # prior rate of lambda's
     constant::Float64
     log_Ga::Array{Float64,1}
+    alpha_wt::Float64 # alpha weight (not technically a hyperparameter)
 end
 
 function construct_hyperparameters(options)
@@ -55,9 +77,18 @@ function construct_hyperparameters(options)
     c = 1.0
     a = 1.0
     b = 1.0
-    log_Ga = lgamma.(a+0.5*(1:n+1))
+
+    # specify the weight
+    alpha_eval = eval(parse(options.alpha_wt_str))
+    alpha_wt_fn(n) = Base.invokelatest(alpha_eval, n)
+    alpha_wt = alpha_wt_fn(options.n)
+
+    log_Ga = lgamma.(a+0.5*(1:n+1) * alpha_wt)
+
+    # normalizing constant of the log Normal-gamma pdf involving hyperparams
     constant = 0.5*log(c) + a*log(b) - lgamma(a)
-    return Hyperparameters(d,m,c,a,b,constant,log_Ga)
+
+    return Hyperparameters(d,m,c,a,b,constant,log_Ga, alpha_wt)
 end
 
 function update_hyperparameters!(H,theta,list,t,x,z)

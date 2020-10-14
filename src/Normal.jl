@@ -37,7 +37,6 @@ type Hyperparameters
     alpha_wt::Float64 # alpha weight (not technically a hyperparameter)
 end
 
-## TODO: STORE THE ALPHA WEIGHT HERE? SAMPLE SIZE?
 function construct_hyperparameters(options)
     x = options.x
     # this is the full data set
@@ -70,24 +69,38 @@ log_prior(theta,m,s,a,b) = log_normpdf(theta[1],m,s) + log_gammapdf(1/theta[2]^2
 log_prior(theta,H) = log_prior(theta,H.m,H.s,H.a,H.b)
 
 # Update parameter for each component
-function update_parameter!(theta_a,theta_b,x,z,c,H,active)
+function update_parameter!(theta_a, theta_b, x, z, c, H, active)
     n = 0
     sum_xc = 0.0
-    for i = 1:length(z); if z[i]==c; sum_xc += x[i]; n += 1; end; end
+    for i = 1:length(z)
+        if z[i] == c
+            sum_xc += x[i]
+            n += 1
+        end
+    end
+
     # update mean
-    ell = 1/H.s^2
-    lambda = 1/(theta_a[2]^2)
-    L = lambda*n * H.alpha_wt + ell ###
-    M = (lambda*sum_xc * H.alpha_wt + ell*H.m) / L ###
-    if active; theta_b[1] = randn()/sqrt(L) + M; end
+    ell = 1 / H.s^2
+    lambda = 1 / (theta_a[2]^2)
+    L = lambda * n * H.alpha_wt + ell ###
+    M = (lambda * sum_xc * H.alpha_wt + ell * H.m) / L ###
+    if active
+        theta_b[1] = randn() / sqrt(L) + M
+    end
 
     # update standard deviation
     alpha = H.a + 0.5*n * H.alpha_wt ###
     r = 0.0
-    for i = 1:length(z); if z[i]==c; r += (x[i]-theta_b[1])*(x[i]-theta_b[1]); end; end
-    beta = H.b + 0.5*r * H.alpha_wt ###
+    for i = 1:length(z)
+        if z[i]==c
+            r += (x[i]-theta_b[1])*(x[i]-theta_b[1])
+        end
+    end
+    beta = H.b + 0.5 * r * H.alpha_wt ###
     # if active; theta_b[2] = 1/sqrt(rand(Gamma(alpha,1/beta))); end
-    if active; theta_b[2] = sqrt(Random.inverse_gamma(alpha,beta)); end
+    if active
+        theta_b[2] = sqrt(Random.inverse_gamma(alpha,beta))
+    end
 
     return log_prior(theta_b,M,1/sqrt(L),alpha,beta)
 end

@@ -69,7 +69,9 @@ function options(
     else
         error("Invalid model_type: $model_type.")
     end
-    if mode=="MVNaaRJ"; @assert(model_type=="MFM", "RJMCMC is not implemented for DPMs."); end
+    if mode=="MVNaaRJ"
+        @assert(model_type=="MFM", "RJMCMC is not implemented for DPMs.")
+    end
 
     n_keep = min(n_keep,n_total)
     module_ = getfield(BayesianMixtures,Symbol(mode))
@@ -83,6 +85,7 @@ end
 
 # Run the MCMC sampler with the specified options.
 function run_sampler(options)
+
     o = options
     n,n_total,n_keep = o.n,o.n_total,o.n_keep
     module_ = getfield(BayesianMixtures,Symbol(o.mode))
@@ -91,6 +94,7 @@ function run_sampler(options)
     module_.sampler(o,1,1)
 
     if o.verbose
+        println("Initializing sampler!")
         println(o.mode, " ", o.model_type)
         println("n = $n, n_total = $n_total, n_keep = $n_keep")
         print("Running... ")
